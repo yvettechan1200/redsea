@@ -10,13 +10,21 @@ export interface GameAssets {
 }
 
 const ASSET_PATHS = {
-    player: './assets/player_girl.png',
+    // 這裡原本是 player_girl.png (找不到)，先改用 npc1.png 頂替！
+    player: './assets/npc1.png', 
+    
     npc1: './assets/npc1.png',
-    npc2: './assets/npc_sprite.png',
-    npc3: './assets/npc_sprite.png', 
+    
+    // 這裡原本是 npc_sprite.png (找不到)，先用 npc1.png 頂替！
+    npc2: './assets/npc1.png', 
+    npc3: './assets/npc1.png', 
+    
     bg1: './assets/bg1.png',
-    bg2: './assets/level2_bg.png',
-    bg3: './assets/level3_bg.png',
+    
+    // 這裡原本是 level2/3 (找不到)，先用 bg1.png 頂替！
+    bg2: './assets/bg1.png', 
+    bg3: './assets/bg1.png', 
+};
 };
 
 export const loadAllAssets = async (): Promise<GameAssets> => {
