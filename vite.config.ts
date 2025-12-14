@@ -4,7 +4,7 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig(({ mode }) => {
   plugins: [react()],
-  base: "/red-sea/",  // <--- 加上這一行
+  base: "/redsea/",  // <--- 加上這一行
 })
     const env = loadEnv(mode, '.', '');
     return {
