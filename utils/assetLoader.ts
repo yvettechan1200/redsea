@@ -12,7 +12,7 @@ export interface GameAssets {
 const ASSET_PATHS = {
     player: './assets/player_girl.png',
     npc1: './assets/npc1.png',
-    npc2: './assets/npc_sprite.png' ,
+    npc2: './assets/npc_sprite.png',
     npc3: './assets/npc_sprite.png', 
     bg1: './assets/bg1.png',
     bg2: './assets/level2_bg.png',
