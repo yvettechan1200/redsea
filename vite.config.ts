@@ -10,7 +10,7 @@ export default defineConfig(({ mode }) => {
   return {
     // --- 關鍵設定開始 ---
     plugins: [react()],
-    base: "/red-sea/",  // ⚠️ 注意：根據你的截圖，倉庫名有橫線，這裡必須要有！
+    base: "/redsea/",  // ⚠️ 注意：根據你的截圖，倉庫名有橫線，這裡必須要有！
     // --- 關鍵設定結束 ---
 
     server: {
