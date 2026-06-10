@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>音樂練習工具</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d0d1a;
+  --surface:#161628;
+  --surface2:#1e1e35;
+  --surface3:#262640;
+  --accent:#7c3aed;
+  --accent-hover:#6d28d9;
+  --accent-light:#a78bfa;
+  --accent-dim:rgba(124,58,237,0.15);
+  --text:#e2e8f0;
+  --text-muted:#8892a4;
+  --border:#2d3748;
+  --border-light:#3d4a5c;
+  --success:#10b981;
+  --warning:#f59e0b;
+  --danger:#ef4444;
+  --radius:10px;
+}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh;padding-bottom:40px}
+.app{max-width:760px;margin:0 auto;padding:16px}
+
+/* ── Header ── */
+header{text-align:center;padding:28px 0 20px}
+header h1{font-size:1.9rem;font-weight:700;background:linear-gradient(135deg,#a78bfa,#60a5fa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+header p{color:var(--text-muted);font-size:0.82rem;margin-top:6px;letter-spacing:.04em}
+
+/* ── Tabs ── */
+.tab-bar{display:flex;background:var(--surface);border-radius:var(--radius);padding:5px;margin-bottom:16px;gap:4px;border:1px solid var(--border)}
+.tab-btn{flex:1;padding:9px 6px;border:none;border-radius:7px;background:transparent;color:var(--text-muted);cursor:pointer;font-size:.82rem;font-weight:500;transition:all .2s;letter-spacing:.02em}
+.tab-btn.active{background:var(--accent);color:#fff;box-shadow:0 2px 12px rgba(124,58,237,.4)}
+.tab-btn:hover:not(.active){background:var(--surface2);color:var(--text)}
+.tab-content{display:none}.tab-content.active{display:block;animation:fadeIn .25s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* ── Card ── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:12px}
+.card-title{font-size:1rem;font-weight:600;color:var(--accent-light);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.section-label{font-size:.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.section-label::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* ── Form elements ── */
+.row{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:.75rem;color:var(--text-muted);letter-spacing:.03em}
+input[type=number],input[type=text],select,textarea{
+  background:var(--surface2);border:1px solid var(--border);border-radius:7px;
+  color:var(--text);padding:8px 12px;font-size:.9rem;outline:none;transition:border-color .2s
+}
+input[type=number]:focus,input[type=text]:focus,select:focus,textarea:focus{border-color:var(--accent)}
+input[type=number]{width:100px}
+textarea{width:100%;resize:vertical;font-family:inherit;line-height:1.5}
+select{cursor:pointer;min-width:130px}
+
+/* ── Buttons ── */
+.btn{padding:9px 20px;border:none;border-radius:7px;cursor:pointer;font-size:.85rem;font-weight:500;transition:all .2s;letter-spacing:.02em}
+.btn-primary{background:var(--accent);color:#fff}.btn-primary:hover{background:var(--accent-hover);box-shadow:0 2px 12px rgba(124,58,237,.3)}
+.btn-secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border)}.btn-secondary:hover{border-color:var(--accent-light);color:var(--accent-light)}
+.btn-sm{padding:6px 14px;font-size:.8rem}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+
+/* ── BPM display ── */
+.ratio-box{text-align:center;padding:16px 12px;background:var(--surface2);border-radius:var(--radius);border:1px solid var(--border);min-width:140px}
+.ratio-value{font-size:2.4rem;font-weight:700;color:var(--accent-light);line-height:1}
+.ratio-sub{font-size:.75rem;color:var(--text-muted);margin-top:5px}
+
+/* ── Upload zone ── */
+.upload-zone{border:2px dashed var(--border-light);border-radius:var(--radius);padding:30px;text-align:center;cursor:pointer;transition:all .2s;position:relative}
+.upload-zone:hover,.upload-zone.drag-over{border-color:var(--accent);background:var(--accent-dim)}
+.upload-zone input[type=file]{display:none}
+.upload-icon{font-size:2.2rem;margin-bottom:8px}
+.upload-text{font-size:.9rem;margin-bottom:4px}.upload-hint{font-size:.75rem;color:var(--text-muted)}
+
+/* ── Progress ── */
+.progress-wrap{margin:10px 0}
+.progress-bar{width:100%;height:5px;background:var(--surface3);border-radius:3px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),#60a5fa);border-radius:3px;transition:width .15s}
+
+/* ── Status messages ── */
+.status{padding:8px 12px;border-radius:7px;font-size:.8rem;margin:8px 0;display:flex;align-items:center;gap:8px}
+.status-proc{background:rgba(124,58,237,.18);color:var(--accent-light);border:1px solid rgba(124,58,237,.3)}
+.status-ok{background:rgba(16,185,129,.18);color:var(--success);border:1px solid rgba(16,185,129,.3)}
+.status-err{background:rgba(239,68,68,.18);color:#f87171;border:1px solid rgba(239,68,68,.3)}
+
+/* ── Player controls ── */
+.player{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+.player-btns{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.time-row{display:flex;justify-content:space-between;font-size:.72rem;color:var(--text-muted);margin-top:2px}
+
+/* ── Metronome ── */
+.beat-row{display:flex;justify-content:center;gap:10px;padding:14px 0 4px}
+.beat-dot{width:22px;height:22px;border-radius:50%;background:var(--border);transition:background .08s,transform .08s,box-shadow .08s}
+.beat-dot.beat-accent{background:var(--accent-light);transform:scale(1.35);box-shadow:0 0 10px rgba(167,139,250,.5)}
+.beat-dot.beat-norm{background:var(--success);transform:scale(1.1)}
+
+/* ── Chord badges ── */
+.chord-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.chord-badge{background:var(--surface2);border:1px solid var(--border-light);border-radius:8px;padding:8px 14px;text-align:center;min-width:52px;transition:border-color .2s}
+.chord-badge .cb-main{font-size:1.1rem;font-weight:600;color:var(--text)}
+.chord-badge .cb-orig{font-size:.68rem;color:var(--text-muted);margin-top:2px}
+.chord-badge.cb-highlight{background:rgba(124,58,237,.2);border-color:var(--accent)}
+.chord-badge.cb-highlight .cb-main{color:var(--accent-light)}
+
+/* ── Capo card ── */
+.capo-card{background:var(--surface2);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;border-left:3px solid var(--warning)}
+.capo-head{font-size:.85rem;font-weight:600;color:var(--warning);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.capo-key{font-size:.75rem;color:var(--text-muted);margin-left:auto}
+
+/* ── Key change tab ── */
+.key-display{display:flex;align-items:center;justify-content:center;gap:18px;padding:20px 0}
+.key-center{text-align:center;min-width:130px}
+.key-name{font-size:2.8rem;font-weight:700;color:var(--accent-light);line-height:1}
+.key-meta{font-size:.78rem;color:var(--text-muted);margin-top:6px}
+.key-btn{width:54px;height:54px;border-radius:50%;font-size:1.4rem;font-weight:700;border:2px solid var(--border-light);background:var(--surface2);cursor:pointer;transition:all .2s;color:var(--text);display:flex;align-items:center;justify-content:center}
+.key-btn:hover{border-color:var(--accent);color:var(--accent-light);background:var(--accent-dim)}
+.half-tone-row{display:flex;justify-content:center;gap:8px;margin-bottom:14px}
+
+/* ── Key info ── */
+.key-info-box{background:var(--surface2);border-radius:8px;padding:10px 14px;margin-top:10px;font-size:.8rem;color:var(--text-muted);border:1px solid var(--border)}
+.scale-notes{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.scale-note{padding:3px 10px;border-radius:5px;background:var(--surface3);font-size:.82rem;border:1px solid var(--border)}
+.scale-note.root{background:var(--accent-dim);border-color:var(--accent);color:var(--accent-light)}
+
+/* ── Arrow ── */
+.arrow{color:var(--text-muted);font-size:1.1rem;padding:0 2px;align-self:center;padding-bottom:4px}
+.divider{height:1px;background:var(--border);margin:16px 0}
+@media(max-width:540px){header h1{font-size:1.4rem}.ratio-value{font-size:1.8rem}.key-name{font-size:2rem}}
+
+/* ── Spinner ── */
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.25);border-top-color:#a78bfa;border-radius:50%;animation:spin .8s linear infinite}
+</style>
+</head>
+<body>
+<div class="app">
+
+<header>
+  <h1>🎵 音樂練習工具</h1>
+  <p>Music Practice Tool — BPM / 和弦轉調 / 升降Key</p>
+</header>
+
+<nav class="tab-bar">
+  <button class="tab-btn active" id="btn-bpm"   onclick="switchTab('bpm',this)">⏱ BPM速度</button>
+  <button class="tab-btn"        id="btn-chord" onclick="switchTab('chord',this)">🎸 和弦轉調</button>
+  <button class="tab-btn"        id="btn-key"   onclick="switchTab('key',this)">🎤 升降Key</button>
+</nav>
+
+<!-- ══════════════════ TAB 1: BPM ══════════════════ -->
+<section id="tab-bpm" class="tab-content active">
+
+  <div class="card">
+    <div class="card-title">📐 速度計算</div>
+    <div class="row" style="gap:16px">
+      <div class="field">
+        <label>原始 BPM</label>
+        <input type="number" id="orig-bpm" value="180" min="20" max="300" oninput="onBpmChange()">
+      </div>
+      <div class="arrow">→</div>
+      <div class="field">
+        <label>目標 BPM</label>
+        <input type="number" id="target-bpm" value="130" min="20" max="300" oninput="onBpmChange()">
+      </div>
+      <div class="ratio-box">
+        <div class="ratio-value" id="ratio-text">0.722x</div>
+        <div class="ratio-sub" id="ratio-sub">播放速度</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🎵 音檔速度調整 <span style="font-size:.72rem;color:var(--text-muted);font-weight:400">（Phase Vocoder 保音高）</span></div>
+
+    <div id="upload-zone" class="upload-zone"
+         onclick="document.getElementById('file-input').click()"
+         ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
+      <input type="file" id="file-input" accept="audio/*" onchange="handleFileSelect(event)">
+      <div class="upload-icon">🎵</div>
+      <div class="upload-text">點擊或拖曳音樂檔案</div>
+      <div class="upload-hint">支援 MP3、WAV、OGG、M4A 等格式</div>
+    </div>
+
+    <div id="file-info" style="display:none;margin-top:14px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+        <span style="font-size:.85rem;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="file-name"></span>
+        <span style="font-size:.75rem;color:var(--text-muted);white-space:nowrap" id="file-dur"></span>
+      </div>
+
+      <div id="proc-btn-area">
+        <button class="btn btn-primary" onclick="processAudio()">⚡ 套用速度調整</button>
+      </div>
+
+      <div id="proc-status" style="display:none">
+        <div class="progress-wrap">
+          <div class="progress-bar"><div class="progress-fill" id="proc-prog" style="width:0%"></div></div>
+        </div>
+        <div class="status status-proc"><span class="spinner"></span><span id="proc-msg">準備處理中…</span></div>
+      </div>
+    </div>
+
+    <div id="player-area" class="player" style="display:none">
+      <div class="status status-ok">✓ 處理完成！可播放或下載</div>
+      <div class="player-btns">
+        <button class="btn btn-primary btn-sm" id="play-btn" onclick="togglePlay()">▶ 播放</button>
+        <button class="btn btn-secondary btn-sm" onclick="stopAudio()">■ 停止</button>
+        <button class="btn btn-secondary btn-sm" onclick="downloadWav()">↓ 下載 WAV</button>
+        <span style="font-size:.78rem;color:var(--text-muted)">速度 <span id="final-ratio" style="color:var(--accent-light)"></span></span>
+      </div>
+      <div class="progress-wrap" onclick="seekAudio(event)" style="cursor:pointer">
+        <div class="progress-bar" id="play-bar"><div class="progress-fill" id="play-prog" style="width:0%"></div></div>
+      </div>
+      <div class="time-row"><span id="cur-time">0:00</span><span id="tot-time">0:00</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🥁 節拍器</div>
+    <div class="row">
+      <div class="field">
+        <label>BPM</label>
+        <input type="number" id="metro-bpm" value="130" min="20" max="300">
+      </div>
+      <div class="field">
+        <label>拍號</label>
+        <select id="metro-beats" onchange="updateBeatDots();restartMetro()">
+          <option value="4">4/4</option>
+          <option value="3">3/4</option>
+          <option value="2">2/4</option>
+          <option value="6">6/8</option>
+        </select>
+      </div>
+      <div class="field" style="justify-content:flex-end;padding-bottom:2px">
+        <button class="btn btn-primary" id="metro-btn" onclick="toggleMetro()">▶ 啟動</button>
+      </div>
+    </div>
+    <div class="beat-row" id="beat-row"></div>
+  </div>
+
+</section>
+
+<!-- ══════════════════ TAB 2: CHORD ══════════════════ -->
+<section id="tab-chord" class="tab-content">
+
+  <div class="card">
+    <div class="card-title">🎸 和弦轉調</div>
+    <div class="field" style="margin-bottom:14px">
+      <label>和弦進行（空格分隔，支援 Am7、Gmaj7、F#m、C/E 等）</label>
+      <textarea id="chord-input" rows="2"
+        placeholder="例：B F# G#m E&#10;  或：Bmaj7 F#7 G#m7 E"
+        oninput="doTranspose()"></textarea>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>原調</label>
+        <select id="from-key" onchange="doTranspose()"></select>
+      </div>
+      <div class="arrow">→</div>
+      <div class="field">
+        <label>目標調</label>
+        <select id="to-key" onchange="doTranspose()"></select>
+      </div>
+      <div style="flex:1"></div>
+    </div>
+  </div>
+
+  <div id="chord-results" style="display:none">
+
+    <div class="card">
+      <div class="section-label">無 Capo 直接彈</div>
+      <div class="chord-list" id="no-capo-list"></div>
+      <div class="key-info-box" id="chord-key-info" style="margin-top:12px">
+        <div id="key-sig-text"></div>
+        <div class="scale-notes" id="scale-notes-row"></div>
+      </div>
+    </div>
+
+    <div class="card" id="capo-card">
+      <div class="section-label">Capo 建議（常用指型）</div>
+      <div id="capo-list"></div>
+    </div>
+
+  </div>
+
+</section>
+
+<!-- ══════════════════ TAB 3: KEY ══════════════════ -->
+<section id="tab-key" class="tab-content">
+
+  <div class="card">
+    <div class="card-title">🎤 升降 Key（人聲用）</div>
+    <div class="field" style="margin-bottom:16px">
+      <label>輸入和弦進行或調名</label>
+      <textarea id="key-input" rows="2"
+        placeholder="例：Am G F E&#10;  或只輸入調名：Am"
+        oninput="updateKeyTab()"></textarea>
+    </div>
+
+    <div class="key-display">
+      <button class="key-btn" onclick="changeKey(-2)" title="降一個全音（-2 半音）">▼</button>
+      <div class="key-center">
+        <div class="key-name" id="key-display-root">—</div>
+        <div class="key-meta" id="key-display-meta">請輸入和弦</div>
+      </div>
+      <button class="key-btn" onclick="changeKey(+2)" title="升一個全音（+2 半音）">▲</button>
+    </div>
+
+    <div class="half-tone-row">
+      <button class="btn btn-secondary btn-sm" onclick="changeKey(-1)">↓ 降半音</button>
+      <button class="btn btn-secondary btn-sm" onclick="resetKey()">↺ 重置</button>
+      <button class="btn btn-secondary btn-sm" onclick="changeKey(+1)">↑ 升半音</button>
+    </div>
+  </div>
+
+  <div id="key-result" style="display:none">
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div class="section-label" style="margin:0">轉調結果</div>
+        <div style="font-size:.78rem;color:var(--text-muted)" id="key-change-desc"></div>
+      </div>
+      <div class="chord-list" id="key-result-chords"></div>
+    </div>
+  </div>
+
+</section>
+
+</div><!-- .app -->
+
+<script>
+// ══════════════════════════════════════════════════
+// PHASE VOCODER WORKER CODE (inline blob)
+// ══════════════════════════════════════════════════
+const WORKER_SRC = `
+function fft(re,im){
+  const n=re.length;
+  for(let i=1,j=0;i<n;i++){
+    let bit=n>>1;
+    for(;j&bit;bit>>=1)j^=bit;
+    j^=bit;
+    if(i<j){let t;t=re[i];re[i]=re[j];re[j]=t;t=im[i];im[i]=im[j];im[j]=t;}
+  }
+  for(let len=2;len<=n;len<<=1){
+    const ang=-2*Math.PI/len,wR=Math.cos(ang),wI=Math.sin(ang);
+    for(let i=0;i<n;i+=len){
+      let uR=1,uI=0;
+      for(let j=0;j<len>>1;j++){
+        const p=i+j,q=i+j+(len>>1);
+        const tR=uR*re[q]-uI*im[q],tI=uR*im[q]+uI*re[q];
+        re[q]=re[p]-tR;im[q]=im[p]-tI;re[p]+=tR;im[p]+=tI;
+        const nr=uR*wR-uI*wI;uI=uR*wI+uI*wR;uR=nr;
+      }
+    }
+  }
+}
+function ifft(re,im){
+  const n=re.length;
+  for(let i=0;i<n;i++)im[i]=-im[i];
+  fft(re,im);
+  for(let i=0;i<n;i++){re[i]/=n;im[i]=-im[i]/n;}
+}
+function stretchCh(samples,ratio){
+  const N=2048,hopA=N>>2,hopS=Math.round(hopA*ratio);
+  const inLen=samples.length;
+  const nFrames=Math.ceil((inLen+N)/hopA);
+  const outLen=nFrames*hopS+N;
+  const out=new Float32Array(outLen),norm=new Float32Array(outLen);
+  const prevPh=new Float32Array(N),phCum=new Float32Array(N);
+  const win=new Float32Array(N);
+  for(let i=0;i<N;i++)win[i]=0.5-0.5*Math.cos(2*Math.PI*i/(N-1));
+  const TP=2*Math.PI;
+  for(let fr=0;fr<nFrames;fr++){
+    const inOff=fr*hopA;
+    const re=new Float32Array(N),im=new Float32Array(N);
+    for(let i=0;i<N;i++)re[i]=(inOff+i<inLen?samples[inOff+i]:0)*win[i];
+    fft(re,im);
+    const oRe=new Float32Array(N),oIm=new Float32Array(N);
+    for(let k=0;k<N;k++){
+      const mag=Math.sqrt(re[k]*re[k]+im[k]*im[k]);
+      const ph=Math.atan2(im[k],re[k]);
+      let dp=ph-prevPh[k]-TP*k*hopA/N;
+      dp-=TP*Math.round(dp/TP);
+      phCum[k]+=(TP*k/N+dp/hopA)*hopS;
+      prevPh[k]=ph;
+      oRe[k]=mag*Math.cos(phCum[k]);oIm[k]=mag*Math.sin(phCum[k]);
+    }
+    ifft(oRe,oIm);
+    const outOff=fr*hopS;
+    for(let i=0;i<N&&outOff+i<outLen;i++){
+      out[outOff+i]+=oRe[i]*win[i];norm[outOff+i]+=win[i]*win[i];
+    }
+    if(fr%20===0)postMessage({type:'progress',val:fr/nFrames});
+  }
+  for(let i=0;i<outLen;i++)if(norm[i]>1e-8)out[i]/=norm[i];
+  return out;
+}
+self.onmessage=function(e){
+  const{chs,ratio,nCh}=e.data;
+  const floats=chs.map(b=>new Float32Array(b));
+  const res=floats.map(f=>stretchCh(f,ratio));
+  const bufs=res.map(r=>r.buffer);
+  postMessage({type:'done',chs:bufs,nCh},bufs);
+};
+`;
+
+// ══════════════════════════════════════════════════
+// CHORD ENGINE
+// ══════════════════════════════════════════════════
+const SH = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const FL = ['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
+const FLAT_PREF = new Set([5,10,3,8,1,6]); // F Bb Eb Ab Db Gb
+
+const N2I = {
+  C:0,'C#':1,Db:1,D:2,'D#':3,Eb:3,E:4,Fb:4,'E#':5,
+  F:5,'F#':6,Gb:6,G:7,'G#':8,Ab:8,A:9,'A#':10,Bb:10,
+  B:11,Cb:11,'B#':0
+};
+
+const KEY_LABELS = [
+  {v:0, l:'C'},  {v:1, l:'C# / Db'}, {v:2, l:'D'},  {v:3, l:'D# / Eb'},
+  {v:4, l:'E'},  {v:5, l:'F'},        {v:6, l:'F# / Gb'}, {v:7, l:'G'},
+  {v:8, l:'G# / Ab'}, {v:9, l:'A'},  {v:10, l:'A# / Bb'}, {v:11, l:'B'}
+];
+
+const KEY_SIG = [
+  '無升降號','1♭','2♯','3♭','4♯','1♭','6♯ / 6♭','1♯','4♭','3♯','2♭','5♯'
+];
+
+const MAJOR_STEPS = [0,2,4,5,7,9,11];
+
+function ni(n){return N2I[n]??-1;}
+function in2n(i,fl){i=((i%12)+12)%12;return fl?FL[i]:SH[i];}
+
+function transposeRoot(r,semi,fl){
+  const i=ni(r);
+  return i===-1?r:in2n(i+semi,fl);
+}
+
+function transposeChord(chord,semi,fl){
+  const slash=chord.lastIndexOf('/');
+  if(slash>0){
+    return transposeChord(chord.slice(0,slash),semi,fl)+'/'+transposeRoot(chord.slice(slash+1),semi,fl);
+  }
+  let root,qual;
+  if(chord.length>=2&&(chord[1]==='#'||chord[1]==='b')){root=chord.slice(0,2);qual=chord.slice(2);}
+  else{root=chord[0];qual=chord.slice(1);}
+  const i=ni(root);
+  if(i===-1)return chord;
+  return in2n(i+semi,fl)+qual;
+}
+
+function parseChords(s){
+  return s.trim().split(/[\s,|／\n]+/)
+    .map(t=>t.trim())
+    .filter(t=>t&&/^[A-Ga-g]/.test(t))
+    .map(t=>t[0].toUpperCase()+t.slice(1));
+}
+
+function getMajorScale(rootSemi,fl){
+  return MAJOR_STEPS.map(st=>in2n(rootSemi+st,fl));
+}
+
+function getCapoSuggestions(targetSemi,transposedChords){
+  const SHAPES=[0,7,2,9,4]; // C G D A E
+  const results=[];
+  for(const sh of SHAPES){
+    const capo=((targetSemi-sh)%12+12)%12;
+    if(capo===0||capo>7)continue;
+    const fl=FLAT_PREF.has(sh);
+    const shaped=transposedChords.map(c=>transposeChord(c,-capo,fl));
+    results.push({capo,shapeLabel:in2n(sh,false)+'調',chords:shaped});
+  }
+  return results.sort((a,b)=>a.capo-b.capo);
+}
+
+// ══════════════════════════════════════════════════
+// TAB SWITCHING
+// ══════════════════════════════════════════════════
+function switchTab(id,btn){
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ══════════════════════════════════════════════════
+// BPM TAB
+// ══════════════════════════════════════════════════
+function onBpmChange(){
+  const orig=parseFloat(document.getElementById('orig-bpm').value)||120;
+  const tgt=parseFloat(document.getElementById('target-bpm').value)||120;
+  const r=tgt/orig;
+  document.getElementById('ratio-text').textContent=r.toFixed(3)+'x';
+  const diff=(Math.log2(r)*12).toFixed(1);
+  document.getElementById('ratio-sub').textContent=
+    `播放速度（${r<1?'較慢':'較快'}，音高不變）`;
+  document.getElementById('metro-bpm').value=Math.round(tgt);
+}
+
+// ── File handling ──
+let origBuf=null, procBuf=null, origSR=44100;
+
+function handleDragOver(e){e.preventDefault();document.getElementById('upload-zone').classList.add('drag-over');}
+function handleDragLeave(){document.getElementById('upload-zone').classList.remove('drag-over');}
+function handleDrop(e){
+  e.preventDefault();
+  document.getElementById('upload-zone').classList.remove('drag-over');
+  const f=e.dataTransfer.files[0];
+  if(f)loadFile(f);
+}
+function handleFileSelect(e){const f=e.target.files[0];if(f)loadFile(f);}
+
+function fmtTime(s){const m=Math.floor(s/60),ss=Math.floor(s%60);return`${m}:${ss.toString().padStart(2,'0')}`;}
+
+async function loadFile(file){
+  const ctx=getACtx();
+  document.getElementById('file-name').textContent=file.name;
+  document.getElementById('file-info').style.display='block';
+  document.getElementById('player-area').style.display='none';
+  document.getElementById('proc-status').style.display='none';
+  document.getElementById('proc-btn-area').style.display='block';
+  const ab=await file.arrayBuffer();
+  try{
+    origBuf=await ctx.decodeAudioData(ab);
+    origSR=origBuf.sampleRate;
+    document.getElementById('file-dur').textContent=fmtTime(origBuf.duration);
+  }catch(e){
+    showStatus('proc-status','status-err','❌ 無法解碼此音訊格式');
+  }
+}
+
+function processAudio(){
+  if(!origBuf)return;
+  const orig=parseFloat(document.getElementById('orig-bpm').value)||120;
+  const tgt=parseFloat(document.getElementById('target-bpm').value)||120;
+  const stretchRatio=orig/tgt; // >1 = slow down, <1 = speed up
+  const speedDisplay=(tgt/orig).toFixed(3)+'x';
+
+  document.getElementById('proc-btn-area').style.display='none';
+  document.getElementById('proc-status').style.display='block';
+  document.getElementById('proc-prog').style.width='0%';
+  document.getElementById('proc-msg').textContent='準備處理中…';
+
+  const nCh=origBuf.numberOfChannels;
+  const chs=[];
+  for(let c=0;c<nCh;c++){
+    const f=origBuf.getChannelData(c);
+    chs.push(f.buffer.slice(f.byteOffset,f.byteOffset+f.byteLength));
+  }
+
+  const blob=new Blob([WORKER_SRC],{type:'application/javascript'});
+  const url=URL.createObjectURL(blob);
+  const worker=new Worker(url);
+  worker.postMessage({chs,ratio:stretchRatio,nCh},chs);
+
+  worker.onmessage=function(e){
+    if(e.data.type==='progress'){
+      const p=(e.data.val*100).toFixed(0);
+      document.getElementById('proc-prog').style.width=p+'%';
+      document.getElementById('proc-msg').textContent='處理中… '+p+'%';
+    } else if(e.data.type==='done'){
+      URL.revokeObjectURL(url);
+      worker.terminate();
+      const ctx=getACtx();
+      const len=e.data.chs[0].byteLength/4;
+      procBuf=ctx.createBuffer(e.data.nCh,len,origSR);
+      for(let c=0;c<e.data.nCh;c++){
+        procBuf.copyToChannel(new Float32Array(e.data.chs[c]),c);
+      }
+      document.getElementById('proc-status').style.display='none';
+      document.getElementById('proc-btn-area').style.display='block';
+      document.getElementById('player-area').style.display='block';
+      document.getElementById('final-ratio').textContent=speedDisplay;
+      document.getElementById('tot-time').textContent=fmtTime(procBuf.duration);
+    }
+  };
+  worker.onerror=function(e){
+    URL.revokeObjectURL(url);
+    document.getElementById('proc-msg').textContent='❌ 處理失敗：'+e.message;
+  };
+}
+
+// ── Audio playback ──
+let audioCtx=null;
+let srcNode=null, playStart=0, playOffset=0, isPlaying=false;
+let progInterval=null;
+
+function getACtx(){
+  if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+  return audioCtx;
+}
+
+function togglePlay(){
+  if(isPlaying){pauseAudio();}else{playAudio();}
+}
+function playAudio(){
+  if(!procBuf)return;
+  const ctx=getACtx();
+  if(audioCtx.state==='suspended')audioCtx.resume();
+  srcNode=ctx.createBufferSource();
+  srcNode.buffer=procBuf;
+  srcNode.connect(ctx.destination);
+  srcNode.start(0,playOffset);
+  playStart=ctx.currentTime-playOffset;
+  isPlaying=true;
+  document.getElementById('play-btn').textContent='⏸ 暫停';
+  srcNode.onended=()=>{
+    if(isPlaying){isPlaying=false;playOffset=0;clearInterval(progInterval);resetPlayer();}
+  };
+  progInterval=setInterval(updatePlayProgress,100);
+}
+function pauseAudio(){
+  if(srcNode){srcNode.onended=null;srcNode.stop();srcNode=null;}
+  playOffset=audioCtx.currentTime-playStart;
+  isPlaying=false;
+  document.getElementById('play-btn').textContent='▶ 播放';
+  clearInterval(progInterval);
+}
+function stopAudio(){
+  if(srcNode){srcNode.onended=null;srcNode.stop();srcNode=null;}
+  isPlaying=false;playOffset=0;
+  clearInterval(progInterval);
+  resetPlayer();
+  document.getElementById('play-btn').textContent='▶ 播放';
+}
+function resetPlayer(){
+  document.getElementById('play-prog').style.width='0%';
+  document.getElementById('cur-time').textContent='0:00';
+}
+function updatePlayProgress(){
+  if(!procBuf)return;
+  const elapsed=audioCtx.currentTime-playStart;
+  const dur=procBuf.duration;
+  document.getElementById('play-prog').style.width=(Math.min(elapsed/dur,1)*100).toFixed(1)+'%';
+  document.getElementById('cur-time').textContent=fmtTime(Math.min(elapsed,dur));
+}
+function seekAudio(e){
+  if(!procBuf)return;
+  const bar=document.getElementById('play-bar');
+  const pct=e.offsetX/bar.offsetWidth;
+  playOffset=pct*procBuf.duration;
+  if(isPlaying){if(srcNode){srcNode.onended=null;srcNode.stop();srcNode=null;}isPlaying=false;playAudio();}
+  else{resetPlayer();document.getElementById('play-prog').style.width=(pct*100).toFixed(1)+'%';document.getElementById('cur-time').textContent=fmtTime(playOffset);}
+}
+
+function downloadWav(){
+  if(!procBuf)return;
+  const nCh=procBuf.numberOfChannels, sr=procBuf.sampleRate, len=procBuf.length;
+  const interleaved=new Float32Array(len*nCh);
+  for(let c=0;c<nCh;c++){
+    const ch=procBuf.getChannelData(c);
+    for(let i=0;i<len;i++)interleaved[i*nCh+c]=ch[i];
+  }
+  const wavBuf=new ArrayBuffer(44+interleaved.length*2);
+  const v=new DataView(wavBuf);
+  function ws(off,s){for(let i=0;i<s.length;i++)v.setUint8(off+i,s.charCodeAt(i));}
+  ws(0,'RIFF');v.setUint32(4,36+interleaved.length*2,true);
+  ws(8,'WAVE');ws(12,'fmt ');v.setUint32(16,16,true);
+  v.setUint16(20,1,true);v.setUint16(22,nCh,true);
+  v.setUint32(24,sr,true);v.setUint32(28,sr*nCh*2,true);
+  v.setUint16(32,nCh*2,true);v.setUint16(34,16,true);
+  ws(36,'data');v.setUint32(40,interleaved.length*2,true);
+  let off=44;
+  for(let i=0;i<interleaved.length;i++){
+    const s=Math.max(-1,Math.min(1,interleaved[i]));
+    v.setInt16(off,s<0?s*0x8000:s*0x7FFF,true);off+=2;
+  }
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([wavBuf],{type:'audio/wav'}));
+  const orig=parseFloat(document.getElementById('orig-bpm').value)||180;
+  const tgt=parseFloat(document.getElementById('target-bpm').value)||130;
+  a.download=`slowed_${tgt}bpm.wav`;
+  a.click();
+}
+
+// ── Metronome ──
+let metroRunning=false, metroCx=null, metroTimer=null, nextBeat=0, beatIdx=0;
+
+function toggleMetro(){
+  metroRunning?stopMetro():startMetro();
+}
+function startMetro(){
+  if(!metroCx)metroCx=new(window.AudioContext||window.webkitAudioContext)();
+  if(metroCx.state==='suspended')metroCx.resume();
+  metroRunning=true;beatIdx=0;nextBeat=metroCx.currentTime;
+  document.getElementById('metro-btn').textContent='⏹ 停止';
+  document.getElementById('metro-btn').classList.replace('btn-primary','btn-secondary');
+  sched();
+}
+function stopMetro(){
+  clearTimeout(metroTimer);metroRunning=false;
+  document.getElementById('metro-btn').textContent='▶ 啟動';
+  document.getElementById('metro-btn').classList.replace('btn-secondary','btn-primary');
+  document.querySelectorAll('.beat-dot').forEach(d=>d.classList.remove('beat-accent','beat-norm'));
+}
+function restartMetro(){if(metroRunning){stopMetro();startMetro();}}
+function sched(){
+  if(!metroRunning)return;
+  const bpm=parseFloat(document.getElementById('metro-bpm').value)||120;
+  const beats=parseInt(document.getElementById('metro-beats').value)||4;
+  const iv=60/bpm;
+  while(nextBeat<metroCx.currentTime+0.15){
+    clickSound(nextBeat,beatIdx%beats===0);
+    schedDot(nextBeat,beatIdx%beats);
+    nextBeat+=iv;beatIdx++;
+  }
+  metroTimer=setTimeout(sched,50);
+}
+function clickSound(t,accent){
+  const o=metroCx.createOscillator(),g=metroCx.createGain();
+  o.connect(g);g.connect(metroCx.destination);
+  o.frequency.value=accent?1100:750;
+  g.gain.setValueAtTime(accent?.8:.5,t);
+  g.gain.exponentialRampToValueAtTime(.001,t+.09);
+  o.start(t);o.stop(t+.09);
+}
+function schedDot(t,idx){
+  const delay=(t-metroCx.currentTime)*1000;
+  setTimeout(()=>{
+    document.querySelectorAll('.beat-dot').forEach((d,i)=>{
+      d.classList.remove('beat-accent','beat-norm');
+      if(i===idx)d.classList.add(idx===0?'beat-accent':'beat-norm');
+    });
+    setTimeout(()=>{document.querySelectorAll('.beat-dot').forEach(d=>d.classList.remove('beat-accent','beat-norm'));},200);
+  },Math.max(0,delay));
+}
+function updateBeatDots(){
+  const beats=parseInt(document.getElementById('metro-beats').value)||4;
+  const row=document.getElementById('beat-row');row.innerHTML='';
+  for(let i=0;i<beats;i++){const d=document.createElement('div');d.className='beat-dot';row.appendChild(d);}
+}
+
+// ══════════════════════════════════════════════════
+// CHORD TAB
+// ══════════════════════════════════════════════════
+function doTranspose(){
+  const raw=document.getElementById('chord-input').value.trim();
+  const fromKey=parseInt(document.getElementById('from-key').value);
+  const toKey=parseInt(document.getElementById('to-key').value);
+
+  if(!raw){document.getElementById('chord-results').style.display='none';return;}
+  const chords=parseChords(raw);
+  if(!chords.length){document.getElementById('chord-results').style.display='none';return;}
+
+  const semi=((toKey-fromKey)%12+12)%12;
+  const fl=FLAT_PREF.has(toKey);
+
+  // No-capo transposition
+  const transposed=chords.map(c=>transposeChord(c,semi,fl));
+  const noCapoList=document.getElementById('no-capo-list');
+  noCapoList.innerHTML='';
+  chords.forEach((orig,i)=>{
+    const div=document.createElement('div');
+    div.className='chord-badge cb-highlight';
+    div.innerHTML=`<div class="cb-main">${escHtml(transposed[i])}</div><div class="cb-orig">${escHtml(orig)}</div>`;
+    noCapoList.appendChild(div);
+  });
+
+  // Key info + scale
+  const dir=semi>6?semi-12:semi;
+  document.getElementById('key-sig-text').textContent=
+    `${KEY_LABELS[fromKey].l} → ${KEY_LABELS[toKey].l}　移調 ${dir>=0?'+':''}${dir} 半音　${KEY_SIG[toKey]}`;
+  const scaleRow=document.getElementById('scale-notes-row');
+  scaleRow.innerHTML='';
+  getMajorScale(toKey,fl).forEach((n,i)=>{
+    const s=document.createElement('span');
+    s.className='scale-note'+(i===0?' root':'');
+    s.textContent=n;
+    scaleRow.appendChild(s);
+  });
+
+  // Capo suggestions
+  const capos=getCapoSuggestions(toKey,transposed);
+  const capoList=document.getElementById('capo-list');
+  capoList.innerHTML='';
+  if(capos.length){
+    capos.forEach(sg=>{
+      const div=document.createElement('div');
+      div.className='capo-card';
+      const chordHtml=sg.chords.map((c,i)=>
+        `<div class="chord-badge"><div class="cb-main">${escHtml(c)}</div><div class="cb-orig">${escHtml(chords[i])}</div></div>`
+      ).join('');
+      div.innerHTML=`<div class="capo-head">🎸 Capo ${sg.capo} <span class="capo-key">（用 ${sg.shapeLabel} 指型彈）</span></div>
+        <div class="chord-list">${chordHtml}</div>`;
+      capoList.appendChild(div);
+    });
+  } else {
+    capoList.innerHTML='<div style="font-size:.82rem;color:var(--text-muted)">此調無常用 Capo 建議，直接彈即可</div>';
+  }
+
+  document.getElementById('chord-results').style.display='block';
+}
+
+// ══════════════════════════════════════════════════
+// KEY TAB
+// ══════════════════════════════════════════════════
+let keyOffset=0;
+
+function updateKeyTab(){
+  keyOffset=0;
+  renderKeyResult();
+}
+
+function changeKey(semi){keyOffset+=semi;renderKeyResult();}
+function resetKey(){keyOffset=0;renderKeyResult();}
+
+function renderKeyResult(){
+  const raw=document.getElementById('key-input').value.trim();
+  const chords=parseChords(raw);
+
+  if(!chords.length){
+    document.getElementById('key-display-root').textContent='—';
+    document.getElementById('key-display-meta').textContent='請輸入和弦';
+    document.getElementById('key-result').style.display='none';
+    return;
+  }
+
+  const firstRoot=chords[0].match(/^([A-G][#b]?)/)?.[1]??chords[0][0];
+  const baseIdx=ni(firstRoot);
+  const newIdx=((baseIdx+keyOffset)%12+12)%12;
+  const fl=FLAT_PREF.has(newIdx);
+  const newRoot=in2n(newIdx,fl);
+
+  document.getElementById('key-display-root').textContent=newRoot;
+
+  let metaText='原調';
+  if(keyOffset!==0){
+    const tones=keyOffset/2;
+    const sign=keyOffset>0?'+':'';
+    const halfNote=keyOffset%2!==0?`（${sign}${keyOffset} 半音）`:'';
+    metaText=`${keyOffset>0?'↑ 升':'↓ 降'} ${Math.abs(tones)} 全音${halfNote}`;
+  }
+  document.getElementById('key-display-meta').textContent=metaText;
+
+  // Result chords
+  const transposed=chords.map(c=>transposeChord(c,keyOffset,fl));
+  const resultDiv=document.getElementById('key-result-chords');
+  resultDiv.innerHTML='';
+  chords.forEach((orig,i)=>{
+    const div=document.createElement('div');
+    div.className='chord-badge cb-highlight';
+    div.innerHTML=`<div class="cb-main">${escHtml(transposed[i])}</div><div class="cb-orig">${escHtml(orig)}</div>`;
+    resultDiv.appendChild(div);
+  });
+
+  const desc=keyOffset===0?'無變化':
+    (keyOffset>0?`升 ${keyOffset/2} 全音 (+${keyOffset} 半音)`:`降 ${Math.abs(keyOffset/2)} 全音 (${keyOffset} 半音)`);
+  document.getElementById('key-change-desc').textContent=desc;
+
+  document.getElementById('key-result').style.display='block';
+}
+
+// ══════════════════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════════════════
+function escHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+function populateKeySelects(){
+  ['from-key','to-key'].forEach((id,i)=>{
+    const sel=document.getElementById(id);
+    KEY_LABELS.forEach(k=>{
+      const o=document.createElement('option');
+      o.value=k.v; o.textContent=k.l;
+      sel.appendChild(o);
+    });
+    sel.value=i===0?'11':'2'; // default: B → D
+  });
+}
+
+// ══════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════
+populateKeySelects();
+updateBeatDots();
+onBpmChange();
+doTranspose();
+</script>
+</body>
+</html>
