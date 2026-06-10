@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>音樂練習工具</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#07071a;
+  --s1:#0f0f25;
+  --s2:#16163a;
+  --s3:#1e1e48;
+  --p:#8b5cf6;
+  --p2:#6366f1;
+  --pg:linear-gradient(135deg,#8b5cf6,#6366f1,#3b82f6);
+  --pl:#a78bfa;
+  --blue:#60a5fa;
+  --ok:#34d399;
+  --warn:#fbbf24;
+  --err:#f87171;
+  --t:#f0f0ff;
+  --t2:#c4c4e0;
+  --muted:#7070a0;
+  --border:rgba(139,92,246,.18);
+  --border2:rgba(255,255,255,.07);
+  --r:14px;
+  --r2:10px;
+  --glow:0 0 24px rgba(139,92,246,.25);
+}
+html,body{min-height:100vh}
+body{background:var(--bg);color:var(--t);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+     background-image:radial-gradient(ellipse 80% 50% at 50% -20%,rgba(139,92,246,.15),transparent)}
+
+/* ── Layout ── */
+.wrap{max-width:740px;margin:0 auto;padding:16px 16px 60px}
+
+/* ── Header ── */
+header{text-align:center;padding:36px 0 28px}
+.logo{font-size:3rem;margin-bottom:10px;filter:drop-shadow(0 0 20px rgba(139,92,246,.6))}
+header h1{font-size:2rem;font-weight:800;background:var(--pg);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:-.5px}
+header p{color:var(--muted);font-size:.82rem;margin-top:6px;letter-spacing:.08em}
+
+/* ── Tab nav ── */
+.tabs{display:flex;gap:8px;background:var(--s1);border-radius:50px;padding:6px;margin-bottom:20px;border:1px solid var(--border2)}
+.tab{flex:1;padding:10px 8px;border:none;border-radius:50px;background:transparent;color:var(--muted);
+     cursor:pointer;font-size:.82rem;font-weight:600;transition:all .25s;letter-spacing:.02em}
+.tab.on{background:var(--pg);color:#fff;box-shadow:0 2px 20px rgba(139,92,246,.45)}
+.tab:hover:not(.on){color:var(--t2)}
+.pane{display:none}.pane.on{display:block;animation:up .3s ease}
+@keyframes up{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+/* ── Card ── */
+.card{background:var(--s1);border:1px solid var(--border2);border-radius:var(--r);padding:22px;margin-bottom:14px;
+      backdrop-filter:blur(20px)}
+.card:hover{border-color:var(--border)}
+.ctitle{font-size:.95rem;font-weight:700;color:var(--pl);margin-bottom:18px;display:flex;align-items:center;gap:8px}
+.slabel{font-size:.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;
+        display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.slabel::after{content:'';flex:1;height:1px;background:var(--border2)}
+
+/* ── Inputs ── */
+.row{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:.72rem;color:var(--muted);font-weight:600;letter-spacing:.04em}
+input[type=number],input[type=text],select,textarea{
+  background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);
+  color:var(--t);padding:10px 14px;font-size:.9rem;outline:none;transition:all .2s;font-family:inherit}
+input[type=number]:focus,select:focus,textarea:focus{border-color:var(--p);box-shadow:0 0 0 3px rgba(139,92,246,.15)}
+input[type=number]{width:100px}
+textarea{width:100%;resize:vertical;line-height:1.6}
+select{cursor:pointer;min-width:140px}
+
+/* ── Buttons ── */
+.btn{padding:10px 22px;border:none;border-radius:50px;cursor:pointer;font-size:.84rem;font-weight:700;transition:all .2s;letter-spacing:.03em}
+.btn-p{background:var(--pg);color:#fff;box-shadow:0 2px 18px rgba(139,92,246,.35)}
+.btn-p:hover{box-shadow:var(--glow);transform:translateY(-1px)}
+.btn-g{background:var(--s2);color:var(--t2);border:1px solid var(--border2)}
+.btn-g:hover{border-color:var(--p);color:var(--pl)}
+.btn-sm{padding:7px 16px;font-size:.78rem}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none!important}
+
+/* ── BPM hero ── */
+.bpm-row{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.bpm-in{display:flex;flex-direction:column;align-items:center;gap:6px}
+.bpm-in label{font-size:.7rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.08em}
+.bpm-in input{width:110px;font-size:1.5rem;font-weight:800;text-align:center;color:var(--pl);
+              background:var(--s2);padding:12px 8px}
+.bpm-arrow{font-size:1.4rem;color:var(--muted);align-self:center;margin-bottom:4px}
+.ratio-hero{flex:1;min-width:140px;text-align:center;background:var(--s2);border-radius:var(--r);
+            padding:18px 12px;border:1px solid var(--border)}
+.ratio-val{font-size:3rem;font-weight:900;background:var(--pg);-webkit-background-clip:text;
+           -webkit-text-fill-color:transparent;background-clip:text;line-height:1}
+.ratio-desc{font-size:.74rem;color:var(--muted);margin-top:6px}
+
+/* ── Upload ── */
+.drop{border:2px dashed rgba(139,92,246,.35);border-radius:var(--r);padding:32px;text-align:center;
+      cursor:pointer;transition:all .25s;position:relative}
+.drop:hover,.drop.over{border-color:var(--p);background:rgba(139,92,246,.06);box-shadow:var(--glow)}
+.drop input{display:none}
+.drop-icon{font-size:2.4rem;margin-bottom:10px}
+.drop-text{font-size:.92rem;font-weight:600;color:var(--t2);margin-bottom:4px}
+.drop-hint{font-size:.75rem;color:var(--muted)}
+.file-row{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.file-name{font-size:.85rem;color:var(--t2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.file-dur{font-size:.75rem;color:var(--muted);white-space:nowrap}
+
+/* ── Progress ── */
+.prog-wrap{margin:10px 0}
+.prog-bar{height:5px;background:var(--s3);border-radius:3px;overflow:hidden}
+.prog-fill{height:100%;background:var(--pg);transition:width .12s;border-radius:3px}
+.status{padding:9px 14px;border-radius:var(--r2);font-size:.8rem;display:flex;align-items:center;gap:8px;margin:8px 0}
+.s-proc{background:rgba(139,92,246,.15);color:var(--pl);border:1px solid rgba(139,92,246,.25)}
+.s-ok{background:rgba(52,211,153,.12);color:var(--ok);border:1px solid rgba(52,211,153,.25)}
+.s-err{background:rgba(248,113,113,.12);color:var(--err);border:1px solid rgba(248,113,113,.25)}
+
+/* ── Player ── */
+.player{margin-top:14px}
+.player-btns{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+.play-bar-wrap{cursor:pointer;padding:6px 0}
+.time-row{display:flex;justify-content:space-between;font-size:.72rem;color:var(--muted);margin-top:3px}
+
+/* ── Metronome ── */
+.metro-row{display:flex;justify-content:center;gap:12px;padding:16px 0 6px}
+.bdot{width:24px;height:24px;border-radius:50%;background:var(--s3);border:1px solid var(--border2);transition:all .1s}
+.bdot.ba{background:var(--pl);box-shadow:0 0 14px rgba(167,139,250,.7);transform:scale(1.35)}
+.bdot.bn{background:var(--ok);box-shadow:0 0 10px rgba(52,211,153,.5);transform:scale(1.1)}
+
+/* ── Chord badges ── */
+.clist{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.cbadge{background:var(--s2);border:1px solid var(--border2);border-radius:10px;padding:9px 16px;
+        text-align:center;min-width:56px;transition:all .2s}
+.cbadge:hover{border-color:var(--border)}
+.cb-main{font-size:1.05rem;font-weight:700;color:var(--t)}
+.cb-orig{font-size:.65rem;color:var(--muted);margin-top:2px}
+.cbadge.hi{background:rgba(139,92,246,.15);border-color:rgba(139,92,246,.4)}
+.cbadge.hi .cb-main{color:var(--pl)}
+
+/* ── Capo card ── */
+.capo{background:var(--s2);border-radius:var(--r2);padding:14px 16px;margin-bottom:10px;
+      border-left:3px solid var(--warn)}
+.capo-h{font-size:.84rem;font-weight:700;color:var(--warn);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.capo-k{font-size:.72rem;color:var(--muted);margin-left:auto}
+
+/* ── Scale notes ── */
+.scale{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.snote{padding:4px 12px;border-radius:50px;background:var(--s2);font-size:.78rem;border:1px solid var(--border2);color:var(--t2)}
+.snote.root{background:rgba(139,92,246,.2);border-color:rgba(139,92,246,.45);color:var(--pl);font-weight:700}
+.key-info{background:var(--s2);border-radius:var(--r2);padding:12px 16px;margin-top:12px;
+          font-size:.78rem;color:var(--muted);border:1px solid var(--border2)}
+
+/* ── Key change hero ── */
+.key-hero{display:flex;align-items:center;justify-content:center;gap:20px;padding:24px 0}
+.key-center{text-align:center;min-width:160px}
+.key-big{font-size:3.2rem;font-weight:900;line-height:1;background:var(--pg);
+         -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.key-sub{font-size:.78rem;color:var(--muted);margin-top:8px;line-height:1.5}
+.key-ctrl{width:58px;height:58px;border-radius:50%;background:var(--s2);border:2px solid var(--border2);
+          cursor:pointer;font-size:1.5rem;font-weight:700;color:var(--t2);transition:all .2s;
+          display:flex;align-items:center;justify-content:center}
+.key-ctrl:hover{border-color:var(--p);color:var(--pl);box-shadow:var(--glow)}
+.half-row{display:flex;justify-content:center;gap:8px;margin-bottom:16px}
+
+/* ── Spinner ── */
+@keyframes spin{to{transform:rotate(360deg)}}
+.spin{display:inline-block;width:13px;height:13px;border:2px solid rgba(167,139,250,.3);
+      border-top-color:var(--pl);border-radius:50%;animation:spin .75s linear infinite}
+
+/* ── Responsive ── */
+@media(max-width:480px){
+  header h1{font-size:1.5rem}.logo{font-size:2.2rem}
+  .ratio-val{font-size:2.2rem}.key-big{font-size:2.2rem}
+  .bpm-in input{font-size:1.2rem;width:90px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="logo">🎵</div>
+  <h1>音樂練習工具</h1>
+  <p>BPM 速度 ／ 和弦轉調 ／ 升降 Key</p>
+</header>
+
+<nav class="tabs">
+  <button class="tab on" onclick="sw('bpm',this)">⏱ BPM速度</button>
+  <button class="tab"    onclick="sw('chord',this)">🎸 和弦轉調</button>
+  <button class="tab"    onclick="sw('key',this)">🎤 升降Key</button>
+</nav>
+
+<!-- ═══════ BPM ═══════ -->
+<section id="p-bpm" class="pane on">
+
+  <div class="card">
+    <div class="ctitle">📐 速度計算</div>
+    <div class="bpm-row">
+      <div class="bpm-in">
+        <label>原始 BPM</label>
+        <input type="number" id="ob" value="180" min="20" max="300" oninput="calcBpm()">
+      </div>
+      <div class="bpm-arrow">→</div>
+      <div class="bpm-in">
+        <label>目標 BPM</label>
+        <input type="number" id="tb" value="130" min="20" max="300" oninput="calcBpm()">
+      </div>
+      <div class="ratio-hero">
+        <div class="ratio-val" id="rv">0.722x</div>
+        <div class="ratio-desc" id="rd">播放速度（音高不變）</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ctitle">🎵 音檔速度調整 <span style="font-size:.72rem;font-weight:400;color:var(--muted)">Phase Vocoder — 保音高</span></div>
+    <div id="dz1" class="drop" onclick="document.getElementById('fi1').click()"
+         ondrop="dropF(event,1)" ondragover="dov(event,1)" ondragleave="dlv(1)">
+      <input type="file" id="fi1" accept="audio/*" onchange="loadF(event,1)">
+      <div class="drop-icon">🎵</div>
+      <div class="drop-text">點擊或拖曳音樂檔案</div>
+      <div class="drop-hint">MP3、WAV、OGG、M4A…</div>
+    </div>
+    <div id="fi1-info" style="display:none;margin-top:14px">
+      <div class="file-row"><span class="file-name" id="fn1"></span><span class="file-dur" id="fd1"></span></div>
+      <div id="fa1"><button class="btn btn-p" onclick="proc(1)">⚡ 套用速度調整</button></div>
+      <div id="fp1" style="display:none">
+        <div class="prog-wrap"><div class="prog-bar"><div class="prog-fill" id="pp1" style="width:0%"></div></div></div>
+        <div class="status s-proc"><span class="spin"></span><span id="pm1">處理中…</span></div>
+      </div>
+    </div>
+    <div id="pl1" class="player" style="display:none">
+      <div class="status s-ok">✓ 處理完成！</div>
+      <div class="player-btns">
+        <button class="btn btn-p btn-sm" id="pb1" onclick="tplay(1)">▶ 播放</button>
+        <button class="btn btn-g btn-sm" onclick="stop(1)">■ 停止</button>
+        <button class="btn btn-g btn-sm" onclick="dl(1)">↓ 下載</button>
+        <span style="font-size:.78rem;color:var(--muted)">速度 <b id="pr1" style="color:var(--pl)"></b></span>
+      </div>
+      <div class="play-bar-wrap" onclick="seek(event,1)">
+        <div class="prog-bar" id="pb-bar1"><div class="prog-fill" id="pf1" style="width:0%"></div></div>
+      </div>
+      <div class="time-row"><span id="ct1">0:00</span><span id="tt1">0:00</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ctitle">🥁 節拍器</div>
+    <div class="row">
+      <div class="field"><label>BPM</label><input type="number" id="mb" value="130" min="20" max="300"></div>
+      <div class="field"><label>拍號</label>
+        <select id="ms" onchange="udots();remetro()">
+          <option value="4">4/4</option><option value="3">3/4</option>
+          <option value="2">2/4</option><option value="6">6/8</option>
+        </select>
+      </div>
+      <div class="field" style="justify-content:flex-end;padding-bottom:2px">
+        <button class="btn btn-p" id="mbt" onclick="tmetro()">▶ 啟動</button>
+      </div>
+    </div>
+    <div class="metro-row" id="mr"></div>
+  </div>
+
+</section>
+
+<!-- ═══════ CHORD ═══════ -->
+<section id="p-chord" class="pane">
+
+  <div class="card">
+    <div class="ctitle">🎸 和弦轉調</div>
+    <div class="field" style="margin-bottom:14px">
+      <label>和弦進行（空格分隔，支援 Am7、Gmaj7、F#m、C/E…）</label>
+      <textarea id="ci" rows="2" placeholder="例：B F# G#m E" oninput="doTrans()"></textarea>
+    </div>
+    <div class="row">
+      <div class="field"><label>原調</label><select id="fk" onchange="doTrans()"></select></div>
+      <div class="bpm-arrow">→</div>
+      <div class="field"><label>目標調</label><select id="tk" onchange="doTrans()"></select></div>
+    </div>
+  </div>
+
+  <div id="cr" style="display:none">
+    <div class="card">
+      <div class="slabel">無 Capo 直接彈</div>
+      <div class="clist" id="ncl"></div>
+      <div class="key-info" id="ki">
+        <div id="ks"></div>
+        <div class="scale" id="sn"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="slabel">Capo 建議</div>
+      <div id="cl"></div>
+    </div>
+  </div>
+
+</section>
+
+<!-- ═══════ KEY ═══════ -->
+<section id="p-key" class="pane">
+
+  <div class="card">
+    <div class="ctitle">🎤 升降 Key — 音檔轉換</div>
+    <div id="dz2" class="drop" onclick="document.getElementById('fi2').click()"
+         ondrop="dropF(event,2)" ondragover="dov(event,2)" ondragleave="dlv(2)">
+      <input type="file" id="fi2" accept="audio/*" onchange="loadF(event,2)">
+      <div class="drop-icon">🎤</div>
+      <div class="drop-text">點擊或拖曳音樂檔案</div>
+      <div class="drop-hint">MP3、WAV、OGG、M4A…</div>
+    </div>
+    <div id="fi2-info" style="display:none;margin-top:14px">
+      <div class="file-row"><span class="file-name" id="fn2"></span><span class="file-dur" id="fd2"></span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ctitle">🎼 調整音調</div>
+    <div class="key-hero">
+      <button class="key-ctrl" onclick="chKey(-2)" title="降一個全音">▼</button>
+      <div class="key-center">
+        <div class="key-big" id="ks-num">0</div>
+        <div class="key-sub" id="ks-desc">半音<br>原調不變</div>
+      </div>
+      <button class="key-ctrl" onclick="chKey(+2)" title="升一個全音">▲</button>
+    </div>
+    <div class="half-row">
+      <button class="btn btn-g btn-sm" onclick="chKey(-1)">↓ -½ 音</button>
+      <button class="btn btn-g btn-sm" onclick="chKey(0,true)">↺ 重置</button>
+      <button class="btn btn-g btn-sm" onclick="chKey(+1)">↑ +½ 音</button>
+    </div>
+    <div style="text-align:center">
+      <button class="btn btn-p" id="kpb" onclick="proc(2)" disabled>⚡ 開始轉調</button>
+    </div>
+    <div id="fp2" style="display:none;margin-top:14px">
+      <div class="prog-wrap"><div class="prog-bar"><div class="prog-fill" id="pp2" style="width:0%"></div></div></div>
+      <div class="status s-proc"><span class="spin"></span><span id="pm2">處理中…</span></div>
+    </div>
+  </div>
+
+  <div id="pl2" class="player card" style="display:none">
+    <div class="status s-ok" id="k-ok-msg">✓ 完成！</div>
+    <div class="player-btns" style="margin-top:10px">
+      <button class="btn btn-p btn-sm" id="pb2" onclick="tplay(2)">▶ 播放</button>
+      <button class="btn btn-g btn-sm" onclick="stop(2)">■ 停止</button>
+      <button class="btn btn-g btn-sm" onclick="dl(2)">↓ 下載</button>
+    </div>
+    <div class="play-bar-wrap" onclick="seek(event,2)">
+      <div class="prog-bar" id="pb-bar2"><div class="prog-fill" id="pf2" style="width:0%"></div></div>
+    </div>
+    <div class="time-row"><span id="ct2">0:00</span><span id="tt2">0:00</span></div>
+  </div>
+
+</section>
+</div><!-- .wrap -->
+
+<script>
+// ╔══════════════════════════════════════╗
+// ║  WEB WORKER — Phase Vocoder + Pitch  ║
+// ╚══════════════════════════════════════╝
+const WK = `
+function fft(re,im){
+  const n=re.length;
+  for(let i=1,j=0;i<n;i++){
+    let b=n>>1;for(;j&b;b>>=1)j^=b;j^=b;
+    if(i<j){let t;t=re[i];re[i]=re[j];re[j]=t;t=im[i];im[i]=im[j];im[j]=t;}
+  }
+  for(let l=2;l<=n;l<<=1){
+    const a=-2*Math.PI/l,wR=Math.cos(a),wI=Math.sin(a);
+    for(let i=0;i<n;i+=l){
+      let uR=1,uI=0;
+      for(let j=0;j<l>>1;j++){
+        const p=i+j,q=i+j+(l>>1);
+        const tR=uR*re[q]-uI*im[q],tI=uR*im[q]+uI*re[q];
+        re[q]=re[p]-tR;im[q]=im[p]-tI;re[p]+=tR;im[p]+=tI;
+        const nr=uR*wR-uI*wI;uI=uR*wI+uI*wR;uR=nr;
+      }
+    }
+  }
+}
+function ifft(re,im){
+  const n=re.length;
+  for(let i=0;i<n;i++)im[i]=-im[i];
+  fft(re,im);
+  for(let i=0;i<n;i++){re[i]/=n;im[i]=-im[i]/n;}
+}
+function stretch(s,ratio,ci,nc){
+  const N=2048,hA=N>>2,hS=Math.round(hA*ratio);
+  const nF=Math.ceil((s.length+N)/hA),oL=nF*hS+N;
+  const out=new Float32Array(oL),nrm=new Float32Array(oL);
+  const pPh=new Float32Array(N),phC=new Float32Array(N);
+  const win=new Float32Array(N);
+  for(let i=0;i<N;i++)win[i]=.5-.5*Math.cos(2*Math.PI*i/(N-1));
+  const TP=2*Math.PI;
+  for(let fr=0;fr<nF;fr++){
+    const io=fr*hA;
+    const re=new Float32Array(N),im=new Float32Array(N);
+    for(let i=0;i<N;i++)re[i]=(io+i<s.length?s[io+i]:0)*win[i];
+    fft(re,im);
+    const oR=new Float32Array(N),oI=new Float32Array(N);
+    for(let k=0;k<N;k++){
+      const mag=Math.sqrt(re[k]*re[k]+im[k]*im[k]);
+      const ph=Math.atan2(im[k],re[k]);
+      let dp=ph-pPh[k]-TP*k*hA/N;
+      dp-=TP*Math.round(dp/TP);
+      phC[k]+=(TP*k/N+dp/hA)*hS;pPh[k]=ph;
+      oR[k]=mag*Math.cos(phC[k]);oI[k]=mag*Math.sin(phC[k]);
+    }
+    ifft(oR,oI);
+    const oo=fr*hS;
+    for(let i=0;i<N&&oo+i<oL;i++){out[oo+i]+=oR[i]*win[i];nrm[oo+i]+=win[i]*win[i];}
+    if(fr%20===0)postMessage({t:'p',v:(ci*nF+fr)/(nc*nF)});
+  }
+  for(let i=0;i<oL;i++)if(nrm[i]>1e-8)out[i]/=nrm[i];
+  return out;
+}
+function resamp(s,tL){
+  const n=s.length,r=n/tL,out=new Float32Array(tL);
+  for(let i=0;i<tL;i++){const p=i*r,j=p|0,f=p-j;out[i]=s[j]+f*((j+1<n?s[j+1]:0)-s[j]);}
+  return out;
+}
+function pitchCh(s,semi,ci,nc){
+  const pr=Math.pow(2,semi/12);
+  const stretched=stretch(s,1/pr,ci,nc);
+  postMessage({t:'p',v:(ci+.9)/nc});
+  return resamp(stretched,s.length);
+}
+self.onmessage=function(e){
+  const{op,chs,nCh}=e.data;
+  const fs=chs.map(b=>new Float32Array(b));
+  const res=op==='stretch'
+    ?fs.map((f,i)=>stretch(f,e.data.ratio,i,nCh))
+    :fs.map((f,i)=>pitchCh(f,e.data.semi,i,nCh));
+  const bufs=res.map(r=>r.buffer);
+  postMessage({t:'done',chs:bufs,nCh},bufs);
+};
+`;
+
+// ╔══════════════════════════════════════╗
+// ║  CHORD ENGINE                        ║
+// ╚══════════════════════════════════════╝
+const SH=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const FL=['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
+const FP=new Set([5,10,3,8,1,6]);
+const NM={C:0,'C#':1,Db:1,D:2,'D#':3,Eb:3,E:4,Fb:4,'E#':5,F:5,'F#':6,Gb:6,G:7,'G#':8,Ab:8,A:9,'A#':10,Bb:10,B:11,Cb:11,'B#':0};
+const KL=['C','C#/Db','D','D#/Eb','E','F','F#/Gb','G','G#/Ab','A','A#/Bb','B'];
+const KSG=['無升降號','1♭','2♯','3♭','4♯','1♭','6♯/6♭','1♯','4♭','3♯','2♭','5♯'];
+const MS=[0,2,4,5,7,9,11];
+
+function ni(n){return NM[n]??-1;}
+function i2n(i,fl){i=((i%12)+12)%12;return fl?FL[i]:SH[i];}
+
+function tRoot(r,s,fl){const i=ni(r);return i===-1?r:i2n(i+s,fl);}
+function tChord(c,s,fl){
+  const sl=c.lastIndexOf('/');
+  if(sl>0)return tChord(c.slice(0,sl),s,fl)+'/'+tRoot(c.slice(sl+1),s,fl);
+  let root,q;
+  if(c.length>=2&&(c[1]==='#'||c[1]==='b')){root=c.slice(0,2);q=c.slice(2);}
+  else{root=c[0];q=c.slice(1);}
+  const i=ni(root);return i===-1?c:i2n(i+s,fl)+q;
+}
+function parseC(s){
+  return s.trim().split(/[\s,|／\n]+/).map(t=>t.trim())
+    .filter(t=>t&&/^[A-Ga-g]/.test(t))
+    .map(t=>t[0].toUpperCase()+t.slice(1));
+}
+function scale(root,fl){return MS.map(st=>i2n(root+st,fl));}
+function capSug(tgt,chords){
+  const shapes=[0,7,2,9,4];
+  return shapes.map(sh=>{
+    const cap=((tgt-sh)%12+12)%12;
+    if(cap===0||cap>7)return null;
+    const fl=FP.has(sh);
+    return{cap,lbl:i2n(sh,false)+'調',chords:chords.map(c=>tChord(c,-cap,fl))};
+  }).filter(Boolean).sort((a,b)=>a.cap-b.cap);
+}
+
+// ╔══════════════════════════════════════╗
+// ║  AUDIO STATE                         ║
+// ╚══════════════════════════════════════╝
+let ACX=null;
+const STATE={
+  1:{buf:null,proc:null,sr:44100,src:null,start:0,off:0,play:false,pi:null},
+  2:{buf:null,proc:null,sr:44100,src:null,start:0,off:0,play:false,pi:null}
+};
+let keyOff=0;
+
+function gACX(){if(!ACX)ACX=new(window.AudioContext||window.webkitAudioContext)();return ACX;}
+function fmt(s){const m=Math.floor(s/60),ss=Math.floor(s%60);return`${m}:${ss.toString().padStart(2,'0')}`;}
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+// ── Load file ──
+function dropF(e,n){e.preventDefault();dlv(n);const f=e.dataTransfer.files[0];if(f)loadF2(f,n);}
+function dov(e,n){e.preventDefault();document.getElementById('dz'+n).classList.add('over');}
+function dlv(n){document.getElementById('dz'+n).classList.remove('over');}
+function loadF(e,n){const f=e.target.files[0];if(f)loadF2(f,n);}
+
+async function loadF2(file,n){
+  const ctx=gACX();
+  document.getElementById('fn'+n).textContent=file.name;
+  document.getElementById('fi'+n+'-info').style.display='block';
+  if(n===2){document.getElementById('pl2').style.display='none';document.getElementById('fp2').style.display='none';}
+  const ab=await file.arrayBuffer();
+  try{
+    STATE[n].buf=await ctx.decodeAudioData(ab);
+    STATE[n].sr=STATE[n].buf.sampleRate;
+    document.getElementById('fd'+n).textContent=fmt(STATE[n].buf.duration);
+    if(n===2)document.getElementById('kpb').disabled=(keyOff===0);
+  }catch(e){alert('無法解碼此音訊格式');}
+}
+
+// ── Process audio ──
+function proc(n){
+  const buf=STATE[n].buf;
+  if(!buf)return;
+  const isStretch=(n===1);
+  let ratio,semi;
+  if(isStretch){
+    const ob=parseFloat(document.getElementById('ob').value)||120;
+    const tb=parseFloat(document.getElementById('tb').value)||120;
+    ratio=ob/tb;
+    document.getElementById('fa1').style.display='none';
+    document.getElementById('fp1').style.display='block';
+    document.getElementById('pp1').style.width='0%';
+    document.getElementById('pm1').textContent='準備中…';
+  } else {
+    semi=keyOff;
+    document.getElementById('kpb').disabled=true;
+    document.getElementById('fp2').style.display='block';
+    document.getElementById('pp2').style.width='0%';
+    document.getElementById('pm2').textContent='準備中…';
+  }
+
+  const nCh=buf.numberOfChannels;
+  const chs=[];
+  for(let c=0;c<nCh;c++){
+    const f=buf.getChannelData(c);
+    chs.push(f.buffer.slice(f.byteOffset,f.byteOffset+f.byteLength));
+  }
+
+  const blob=new Blob([WK],{type:'application/javascript'});
+  const url=URL.createObjectURL(blob);
+  const wk=new Worker(url);
+  const msg=isStretch?{op:'stretch',chs,nCh,ratio}:{op:'pitch',chs,nCh,semi};
+  wk.postMessage(msg,chs);
+
+  wk.onmessage=function(e){
+    if(e.data.t==='p'){
+      const pct=(e.data.v*100).toFixed(0);
+      document.getElementById('pp'+n).style.width=pct+'%';
+      document.getElementById('pm'+n).textContent='處理中… '+pct+'%';
+    } else if(e.data.t==='done'){
+      URL.revokeObjectURL(url);wk.terminate();
+      const ctx=gACX();
+      const len=e.data.chs[0].byteLength/4;
+      const pb=ctx.createBuffer(e.data.nCh,len,STATE[n].sr);
+      for(let c=0;c<e.data.nCh;c++)pb.copyToChannel(new Float32Array(e.data.chs[c]),c);
+      STATE[n].proc=pb;
+
+      if(n===1){
+        document.getElementById('fp1').style.display='none';
+        document.getElementById('fa1').style.display='block';
+        document.getElementById('pl1').style.display='block';
+        const r=(parseFloat(document.getElementById('tb').value)/parseFloat(document.getElementById('ob').value)).toFixed(3);
+        document.getElementById('pr1').textContent=r+'x';
+        document.getElementById('tt1').textContent=fmt(pb.duration);
+      } else {
+        document.getElementById('fp2').style.display='none';
+        document.getElementById('pl2').style.display='block';
+        document.getElementById('kpb').disabled=false;
+        const sign=semi>0?'↑ 升':'↓ 降';
+        document.getElementById('k-ok-msg').textContent=`✓ ${sign} ${Math.abs(semi)} 半音 完成！`;
+        document.getElementById('tt2').textContent=fmt(pb.duration);
+      }
+    }
+  };
+}
+
+// ── Playback ──
+function tplay(n){STATE[n].play?pauseA(n):playA(n);}
+function playA(n){
+  const pb=STATE[n].proc;if(!pb)return;
+  const ctx=gACX();if(ctx.state==='suspended')ctx.resume();
+  const src=ctx.createBufferSource();
+  src.buffer=pb;src.connect(ctx.destination);
+  src.start(0,STATE[n].off);
+  STATE[n].src=src;STATE[n].start=ctx.currentTime-STATE[n].off;STATE[n].play=true;
+  document.getElementById('pb'+n).textContent='⏸ 暫停';
+  src.onended=()=>{if(STATE[n].play){STATE[n].play=false;STATE[n].off=0;clearInterval(STATE[n].pi);resetP(n);}};
+  STATE[n].pi=setInterval(()=>updP(n),100);
+}
+function pauseA(n){
+  const s=STATE[n];
+  if(s.src){s.src.onended=null;s.src.stop();s.src=null;}
+  s.off=ACX.currentTime-s.start;s.play=false;
+  clearInterval(s.pi);
+  document.getElementById('pb'+n).textContent='▶ 播放';
+}
+function stop(n){
+  const s=STATE[n];
+  if(s.src){s.src.onended=null;s.src.stop();s.src=null;}
+  s.play=false;s.off=0;clearInterval(s.pi);
+  document.getElementById('pb'+n).textContent='▶ 播放';
+  resetP(n);
+}
+function resetP(n){
+  document.getElementById('pf'+n).style.width='0%';
+  document.getElementById('ct'+n).textContent='0:00';
+}
+function updP(n){
+  const s=STATE[n],pb=s.proc;if(!pb)return;
+  const el=ACX.currentTime-s.start,dur=pb.duration;
+  document.getElementById('pf'+n).style.width=(Math.min(el/dur,1)*100).toFixed(1)+'%';
+  document.getElementById('ct'+n).textContent=fmt(Math.min(el,dur));
+}
+function seek(e,n){
+  const pb=STATE[n].proc;if(!pb)return;
+  const bar=document.getElementById('pb-bar'+n);
+  STATE[n].off=e.offsetX/bar.offsetWidth*pb.duration;
+  if(STATE[n].play){if(STATE[n].src){STATE[n].src.onended=null;STATE[n].src.stop();}STATE[n].play=false;playA(n);}
+  else{resetP(n);document.getElementById('pf'+n).style.width=(STATE[n].off/pb.duration*100).toFixed(1)+'%';
+       document.getElementById('ct'+n).textContent=fmt(STATE[n].off);}
+}
+
+// ── Download WAV ──
+function dl(n){
+  const pb=STATE[n].proc;if(!pb)return;
+  const nCh=pb.numberOfChannels,sr=pb.sampleRate,len=pb.length;
+  const il=new Float32Array(len*nCh);
+  for(let c=0;c<nCh;c++){const ch=pb.getChannelData(c);for(let i=0;i<len;i++)il[i*nCh+c]=ch[i];}
+  const buf=new ArrayBuffer(44+il.length*2),v=new DataView(buf);
+  const ws=(o,s)=>{for(let i=0;i<s.length;i++)v.setUint8(o+i,s.charCodeAt(i));};
+  ws(0,'RIFF');v.setUint32(4,36+il.length*2,true);ws(8,'WAVE');ws(12,'fmt ');
+  v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,nCh,true);
+  v.setUint32(24,sr,true);v.setUint32(28,sr*nCh*2,true);
+  v.setUint16(32,nCh*2,true);v.setUint16(34,16,true);ws(36,'data');v.setUint32(40,il.length*2,true);
+  let off=44;for(let i=0;i<il.length;i++){const s2=Math.max(-1,Math.min(1,il[i]));v.setInt16(off,s2<0?s2*32768:s2*32767,true);off+=2;}
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([buf],{type:'audio/wav'}));
+  if(n===1){const ob=document.getElementById('ob').value,tb=document.getElementById('tb').value;a.download=`bpm_${tb}.wav`;}
+  else{a.download=`key_${keyOff>=0?'+':''}${keyOff}semi.wav`;}
+  a.click();
+}
+
+// ╔══════════════════════════════════════╗
+// ║  BPM TAB                             ║
+// ╚══════════════════════════════════════╝
+function calcBpm(){
+  const ob=parseFloat(document.getElementById('ob').value)||120;
+  const tb=parseFloat(document.getElementById('tb').value)||120;
+  const r=tb/ob;
+  document.getElementById('rv').textContent=r.toFixed(3)+'x';
+  document.getElementById('rd').textContent=r<1?'放慢速度（音高不變）':r>1?'加快速度（音高不變）':'原速';
+  document.getElementById('mb').value=Math.round(tb);
+}
+
+// ╔══════════════════════════════════════╗
+// ║  METRONOME                           ║
+// ╚══════════════════════════════════════╝
+let mRun=false,mCx=null,mT=null,mNext=0,mBeat=0;
+
+function tmetro(){mRun?stopM():startM();}
+function startM(){
+  if(!mCx)mCx=new(window.AudioContext||window.webkitAudioContext)();
+  if(mCx.state==='suspended')mCx.resume();
+  mRun=true;mBeat=0;mNext=mCx.currentTime;
+  document.getElementById('mbt').textContent='⏹ 停止';
+  document.getElementById('mbt').classList.replace('btn-p','btn-g');
+  schedM();
+}
+function stopM(){
+  clearTimeout(mT);mRun=false;
+  document.getElementById('mbt').textContent='▶ 啟動';
+  document.getElementById('mbt').classList.replace('btn-g','btn-p');
+  document.querySelectorAll('.bdot').forEach(d=>d.classList.remove('ba','bn'));
+}
+function remetro(){if(mRun){stopM();startM();}}
+function schedM(){
+  if(!mRun)return;
+  const bpm=parseFloat(document.getElementById('mb').value)||120;
+  const b=parseInt(document.getElementById('ms').value)||4;
+  while(mNext<mCx.currentTime+.15){
+    clickM(mNext,mBeat%b===0);
+    dotM(mNext,mBeat%b);
+    mNext+=60/bpm;mBeat++;
+  }
+  mT=setTimeout(schedM,50);
+}
+function clickM(t,acc){
+  const o=mCx.createOscillator(),g=mCx.createGain();
+  o.connect(g);g.connect(mCx.destination);
+  o.frequency.value=acc?1100:750;
+  g.gain.setValueAtTime(acc?.8:.5,t);
+  g.gain.exponentialRampToValueAtTime(.001,t+.09);
+  o.start(t);o.stop(t+.09);
+}
+function dotM(t,idx){
+  const d=(t-mCx.currentTime)*1000;
+  setTimeout(()=>{
+    document.querySelectorAll('.bdot').forEach((d2,i)=>{
+      d2.classList.remove('ba','bn');
+      if(i===idx)d2.classList.add(idx===0?'ba':'bn');
+    });
+    setTimeout(()=>document.querySelectorAll('.bdot').forEach(d2=>d2.classList.remove('ba','bn')),190);
+  },Math.max(0,d));
+}
+function udots(){
+  const b=parseInt(document.getElementById('ms').value)||4;
+  const r=document.getElementById('mr');r.innerHTML='';
+  for(let i=0;i<b;i++){const d=document.createElement('div');d.className='bdot';r.appendChild(d);}
+}
+
+// ╔══════════════════════════════════════╗
+// ║  CHORD TAB                           ║
+// ╚══════════════════════════════════════╝
+function populateK(){
+  ['fk','tk'].forEach((id,i)=>{
+    const s=document.getElementById(id);
+    KL.forEach((l,v)=>{const o=document.createElement('option');o.value=v;o.textContent=l;s.appendChild(o);});
+    s.value=i===0?'11':'2';
+  });
+}
+function doTrans(){
+  const raw=document.getElementById('ci').value.trim();
+  const fk=parseInt(document.getElementById('fk').value);
+  const tk=parseInt(document.getElementById('tk').value);
+  if(!raw){document.getElementById('cr').style.display='none';return;}
+  const chords=parseC(raw);
+  if(!chords.length){document.getElementById('cr').style.display='none';return;}
+  const semi=((tk-fk)%12+12)%12;
+  const fl=FP.has(tk);
+  const tr=chords.map(c=>tChord(c,semi,fl));
+
+  // No-capo
+  const ncl=document.getElementById('ncl');ncl.innerHTML='';
+  chords.forEach((orig,i)=>{
+    const d=document.createElement('div');d.className='cbadge hi';
+    d.innerHTML=`<div class="cb-main">${esc(tr[i])}</div><div class="cb-orig">${esc(orig)}</div>`;
+    ncl.appendChild(d);
+  });
+
+  // Key info
+  const dir=semi>6?semi-12:semi;
+  document.getElementById('ks').textContent=`${KL[fk]} → ${KL[tk]}　${dir>=0?'+':''}${dir} 半音　${KSG[tk]}`;
+  const sn=document.getElementById('sn');sn.innerHTML='';
+  scale(tk,fl).forEach((n,i)=>{
+    const s2=document.createElement('span');s2.className='snote'+(i===0?' root':'');s2.textContent=n;sn.appendChild(s2);
+  });
+
+  // Capo
+  const caps=capSug(tk,tr);
+  const cl=document.getElementById('cl');cl.innerHTML='';
+  if(caps.length){
+    caps.forEach(sg=>{
+      const d=document.createElement('div');d.className='capo';
+      d.innerHTML=`<div class="capo-h">🎸 Capo ${sg.cap}<span class="capo-k">用 ${sg.lbl} 指型</span></div>
+        <div class="clist">${sg.chords.map((c,i)=>`<div class="cbadge"><div class="cb-main">${esc(c)}</div><div class="cb-orig">${esc(chords[i])}</div></div>`).join('')}</div>`;
+      cl.appendChild(d);
+    });
+  } else {
+    cl.innerHTML='<div style="font-size:.82rem;color:var(--muted)">此調無常用 Capo 建議，直接彈即可</div>';
+  }
+  document.getElementById('cr').style.display='block';
+}
+
+// ╔══════════════════════════════════════╗
+// ║  KEY TAB                             ║
+// ╚══════════════════════════════════════╝
+function chKey(delta,reset=false){
+  if(reset)keyOff=0;else keyOff+=delta;
+  const n=document.getElementById('ks-num');
+  const d=document.getElementById('ks-desc');
+  n.textContent=(keyOff>0?'+':'')+keyOff;
+  if(keyOff===0){
+    d.textContent='半音\n原調不變';
+  } else {
+    const tones=keyOff/2;
+    const fullStr=Number.isInteger(tones)?`${Math.abs(tones)} 全音`:`${Math.abs(keyOff)} 半音`;
+    d.innerHTML=`半音<br>${keyOff>0?'升高':'降低'} ${fullStr}`;
+  }
+  const hasBuf=!!STATE[2].buf;
+  document.getElementById('kpb').disabled=!hasBuf||keyOff===0;
+}
+
+// ╔══════════════════════════════════════╗
+// ║  TAB SWITCH                          ║
+// ╚══════════════════════════════════════╝
+function sw(id,btn){
+  document.querySelectorAll('.pane').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('on'));
+  document.getElementById('p-'+id).classList.add('on');
+  btn.classList.add('on');
+}
+
+// ╔══════════════════════════════════════╗
+// ║  INIT                                ║
+// ╚══════════════════════════════════════╝
+populateK();udots();calcBpm();
+</script>
+</body>
+</html>
